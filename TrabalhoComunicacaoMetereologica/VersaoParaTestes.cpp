@@ -80,6 +80,8 @@ bool PublicarDadosMQTT()
     {
         if (mqtt.connect("ESP32Client", mqtt_username, mqtt_password))
         {
+            Serial.println(" mqtt broker connected");
+
             String dados = "{\"Estacao_ID\": \"1\","
                            "\"Data_Leitura\": \"" +
                            Data_Leitura + "\","
@@ -111,7 +113,8 @@ bool PublicarDadosMQTT()
             mqtt.publish(topic, dados.c_str());
             return true;
         }
-        SerialMon.printf("Tentativa %d falhou ao conectar ao broker %s. Motivo: %s\n", attempt + 1, mqtt_broker, mqtt.state());
+        attempt++;
+        Serial.println("Tentativa falhou ao conectar ao broker MQTT. Tentando novamente...");
 
         delay(5000); // Espera por 5 segundos antes de tentar novamente
     }
@@ -122,8 +125,7 @@ bool PublicarDadosMQTT()
 bool DownloadDados()
 {
     HTTPClient http;
-    //   http.begin("http://192.168.4.1/transferir?arquivo=/data.txt");  //original em produção
-    http.begin("http://drive.google.com/uc?export=download&id=1ptEzjTFh3f3BKxscevem50aF4fATQTQj");
+    http.begin("http://192.168.4.1/transferir?arquivo=/data.txt"); // original em produção
 
     int httpCode = http.GET();
 
@@ -192,6 +194,46 @@ bool DownloadDados()
     return false;
 }
 
+bool DownloadDadosTesteLocal()
+{
+    HTTPClient http;
+    // Iniciar conexão com a URL
+    http.begin("http://viacep.com.br/ws/98910000/json/");
+    // Fazer a requisição GET
+    int httpCode = http.GET();
+
+    if (httpCode > 0) // Verifica se a requisição foi bem-sucedida
+    {
+        String payload = http.getString(); // Obtém a resposta
+        Serial.println(payload);
+
+        // Agora você pode parsear a resposta JSON usando uma biblioteca como ArduinoJson
+        // Para fins de simplificação e teste, apenas atribuir valores fixos
+        Data_Leitura = "17/09/2023";
+        Hora_Leitura = "15:00:00";
+        Chuvahora_mm = "10";
+        Chuva_dia_mm = "50";
+        Temperatura_C = "25";
+        Umidade = "70";
+        Pressao_Pa = "101325";
+        T_Relva_C = "20";
+        Solar_W_m2 = "500";
+        Umi_Solo = "15";
+        Vel_Vento_Km_H = "10";
+        Vel_Max_Vento_Km_h = "20";
+        Dir_Vento_Graus = "45";
+
+        http.end();
+        return true;
+    }
+    else
+    {
+        Serial.println("Erro na requisição HTTP: " + String(httpCode));
+        http.end();
+        return false;
+    }
+}
+
 void setup()
 {
     SerialMon.begin(115200);
@@ -258,13 +300,14 @@ void loop()
     // Se a conexão WiFi foi bem-sucedida, prossegue com o download dos dados
     if (WifiConnected)
     {
-        if (DownloadDados())
+        // if (DownloadDados())
+        if (DownloadDadosTesteLocal())
         {
             Serial.println("Dados obtidos com sucesso!");
             // Se a conexão GPRS foi bem-sucedida, prossegue com a publicação de dados via MQTT
             if (GPRSConnected)
             {
-               if (PublicarDadosMQTT())
+                if (PublicarDadosMQTT())
                 {
                     Serial.println("Dados publicados com sucesso!");
                 }

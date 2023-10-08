@@ -2,23 +2,22 @@
 
 #define SerialMon Serial
 #define SerialAT Serial1
-// #define TINY_GSM_MODEM_SIM7000
-#define TINY_GSM_MODEM_SIM7000SSL
-#define TINY_GSM_RX_BUFFER 1024
+#define TINY_GSM_MODEM_SIM7000
+// se estiver utilizando SSL, descomentar a linha abaixo, e comentar a linha acima
+// #define TINY_GSM_MODEM_SIM7000SSL
 #define GSM_PIN ""
-
 
 const char apn[] = "zap.vivo.com.br";
 const char gprsUser[] = "vivo";
 const char gprsPass[] = "vivo";
 
-const char *mqtt_broker = "XXXXX.eu.hivemq.cloud";
+const char *mqtt_broker = "test.mosquitto.org";
 const char *topic = "my/teste/imhof";
-const char *mqtt_username = "seuUsuario";
-const char *mqtt_password = "suaSenha";
-const int mqtt_port = 8883;
+const char *mqtt_username = "";
+const char *mqtt_password = "";
+const int mqtt_port = 1883;
 
-const char *ssid = "SeuSSID";
+const char *ssid = "Suarede";
 const char *password = "SuaSenha";
 
 #include <TinyGsmClient.h>
@@ -34,15 +33,8 @@ TinyGsm modem(debugger);
 TinyGsm modem(SerialAT);
 #endif
 
-const char *root_ca = R"EOF(
------BEGIN CERTIFICATE-----
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
------END CERTIFICATE-----
-)EOF";
-
-
-// TinyGsmClient client(modem);
-TinyGsmClientSecure client(modem);
+TinyGsmClient client(modem);
+// TinyGsmClientSecure client(modem);
 PubSubClient mqtt(client);
 
 #define uS_TO_S_FACTOR 1000000ULL
@@ -56,6 +48,7 @@ PubSubClient mqtt(client);
 // Definições das variáveis globais
 bool WifiConnected = false;
 bool GPRSConnected = false;
+String estacao_ID = "1";
 String Data_Leitura, Hora_Leitura, Chuvahora_mm, Chuva_dia_mm, Temperatura_C, Umidade, Pressao_Pa, T_Relva_C, Solar_W_m2, Umi_Solo, Vel_Vento_Km_H, Vel_Max_Vento_Km_h, Dir_Vento_Graus;
 
 const int MAX_WIFI_RETRIES = 3;  // Define o número máximo de tentativas de conexão WiFi
@@ -64,6 +57,7 @@ const int MAX_MQTT_RETRIES = 3;  // Define o número máximo de tentativas de co
 const int RETRY_DELAY = 10000;   // 10 segundos para tentar novamente as conexões
 
 // functions
+// define a função para ligar o modem
 void modemPowerOn() {
   pinMode(PWR_PIN, OUTPUT);
   digitalWrite(PWR_PIN, HIGH);
@@ -71,6 +65,7 @@ void modemPowerOn() {
   digitalWrite(PWR_PIN, LOW);
 }
 
+// define a função para desligar o GPS
 void disableGPS() {
   modem.sendAT("+CGPIO=0,48,1,0");
   if (modem.waitResponse(10000L) != 1) {
@@ -83,36 +78,23 @@ bool PublicarDadosMQTT() {
   mqtt.setServer(mqtt_broker, mqtt_port);
 
   for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {
-    if (mqtt.connect("ESP32Client", mqtt_username, mqtt_password)) {
-      Serial.println(" mqtt broker connected");
+    if (mqtt.connect("53cdaa50-bac0-4dc1-8cce-bd33f52c1756", mqtt_username, mqtt_password)) {
+      Serial.println(" mqtt broker conectado");
 
-      String dados = "{\"Estacao_ID\": \"1\","
-                     "\"Data_Leitura\": \""
-                     + Data_Leitura + "\","
-                                      "\"Hora_Leitura\": \""
-                     + Hora_Leitura + "\","
-                                      "\"Chuva_hora_mm\": "
-                     + Chuvahora_mm + ","
-                                      "\"Chuva_dia_mm\": "
-                     + Chuva_dia_mm + ","
-                                      "\"Temperatura_C\": "
-                     + Temperatura_C + ","
-                                       "\"Umidade\": "
-                     + Umidade + ","
-                                 "\"Pressao_Pa\": "
-                     + Pressao_Pa + ","
-                                    "\"T_Relva_C\": "
-                     + T_Relva_C + ","
-                                   "\"Solar_W_m2\": "
-                     + Solar_W_m2 + ","
-                                    "\"Umi_Solo\": "
-                     + Umi_Solo + ","
-                                  "\"Vel_Vento_Km_H\": "
-                     + Vel_Vento_Km_H + ","
-                                        "\"Vel_Max_Vento_Km_h\": "
-                     + Vel_Max_Vento_Km_h + ","
-                                            "\"Dir_Vento_Graus\": "
-                     + Dir_Vento_Graus + "}";
+      String dados = "{\"Estacao_ID\": \"" + estacao_ID + "\","
+                     "\"Data_Leitura\": \"" + Data_Leitura + "\","
+                     "\"Hora_Leitura\": \"" + Hora_Leitura + "\","
+                     "\"Chuva_hora_mm\": " + Chuvahora_mm + ","
+                     "\"Chuva_dia_mm\": " + Chuva_dia_mm + ","
+                     "\"Temperatura_C\": " + Temperatura_C + ","
+                     "\"Umidade\": " + Umidade + ","
+                     "\"Pressao_Pa\": " + Pressao_Pa + ","
+                     "\"T_Relva_C\": " + T_Relva_C + ","
+                     "\"Solar_W_m2\": " + Solar_W_m2 + ","
+                     "\"Umi_Solo\": " + Umi_Solo + ","
+                     "\"Vel_Vento_Km_H\": " + Vel_Vento_Km_H + ","
+                     "\"Vel_Max_Vento_Km_h\": " + Vel_Max_Vento_Km_h + ","
+                     "\"Dir_Vento_Graus\": " + Dir_Vento_Graus + "}";
 
       mqtt.publish(topic, dados.c_str());
       return true;
@@ -206,8 +188,8 @@ bool DownloadDadosTesteLocal() {
     Serial.println(payload);
 
     // Para fins de simplificação e teste, apenas atribuir valores fixos
-    Data_Leitura = "17/09/2023";
-    Hora_Leitura = "15:00:00";
+    Data_Leitura = "08/10/2023";
+    Hora_Leitura = "18:49:00";
     Chuvahora_mm = "10";
     Chuva_dia_mm = "50";
     Temperatura_C = "25";
@@ -256,8 +238,9 @@ void setup() {
     esp_deep_sleep_start();
   }
 
-  // client.setCACert(root_ca);
-  client.setCertificate(root_ca);
+  // se estiver utilizando SSL, descomentar a linha abaixo
+  // client.setCertificate(root_ca);
+
   Serial.println("Conectando GPRS Setup");
   for (int i = 0; i < MAX_GPRS_RETRIES; i++) {
     modem.init();

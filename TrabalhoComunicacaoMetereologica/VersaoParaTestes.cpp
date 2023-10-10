@@ -5,19 +5,26 @@
 #define TINY_GSM_MODEM_SIM7000
 // se estiver utilizando SSL, descomentar a linha abaixo, e comentar a linha acima
 // #define TINY_GSM_MODEM_SIM7000SSL
+#define TINY_GSM_RX_BUFFER 1024
 #define GSM_PIN ""
 
 const char apn[] = "zap.vivo.com.br";
 const char gprsUser[] = "vivo";
 const char gprsPass[] = "vivo";
 
-const char *mqtt_broker = "test.mosquitto.org";
-const char *topic = "my/teste/imhof";
+const char *mqtt_broker = "x";
+const char *topic = "x";
 const char *mqtt_username = "";
 const char *mqtt_password = "";
-const int mqtt_port = 1883;
+const int mqtt_port = x;
 
-const char *ssid = "Suarede";
+// const char *mqtt_broker = "test.mosquitto.org";
+// const char *topic = "my/teste/imhof";
+// // const char *mqtt_username = "";
+// // const char *mqtt_password = "";
+// const int mqtt_port = 1883;
+
+const char *ssid = "SuaRede";
 const char *password = "SuaSenha";
 
 #include <TinyGsmClient.h>
@@ -49,6 +56,7 @@ PubSubClient mqtt(client);
 bool WifiConnected = false;
 bool GPRSConnected = false;
 String estacao_ID = "1";
+String KeyValidator = "KEY";
 String Data_Leitura, Hora_Leitura, Chuvahora_mm, Chuva_dia_mm, Temperatura_C, Umidade, Pressao_Pa, T_Relva_C, Solar_W_m2, Umi_Solo, Vel_Vento_Km_H, Vel_Max_Vento_Km_h, Dir_Vento_Graus;
 
 const int MAX_WIFI_RETRIES = 3;  // Define o número máximo de tentativas de conexão WiFi
@@ -77,11 +85,12 @@ void disableGPS() {
 bool PublicarDadosMQTT() {
   mqtt.setServer(mqtt_broker, mqtt_port);
 
-  for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {
-    if (mqtt.connect("53cdaa50-bac0-4dc1-8cce-bd33f52c1756", mqtt_username, mqtt_password)) {
+  for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {    
+      if (mqtt.connect("ESP32Client")) {
       Serial.println(" mqtt broker conectado");
 
-      String dados = "{\"Estacao_ID\": \"" + estacao_ID + "\","
+      String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
+                     "\"Estacao_ID\": \"" + estacao_ID + "\","
                      "\"Data_Leitura\": \"" + Data_Leitura + "\","
                      "\"Hora_Leitura\": \"" + Hora_Leitura + "\","
                      "\"Chuva_hora_mm\": " + Chuvahora_mm + ","
@@ -96,7 +105,7 @@ bool PublicarDadosMQTT() {
                      "\"Vel_Max_Vento_Km_h\": " + Vel_Max_Vento_Km_h + ","
                      "\"Dir_Vento_Graus\": " + Dir_Vento_Graus + "}";
 
-      mqtt.publish(topic, dados.c_str());
+      mqtt.publish(topic, dados.c_str());     
       return true;
     }
     attempt++;
@@ -237,10 +246,9 @@ void setup() {
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
     esp_deep_sleep_start();
   }
-
   // se estiver utilizando SSL, descomentar a linha abaixo
   // client.setCertificate(root_ca);
-
+  
   Serial.println("Conectando GPRS Setup");
   for (int i = 0; i < MAX_GPRS_RETRIES; i++) {
     modem.init();

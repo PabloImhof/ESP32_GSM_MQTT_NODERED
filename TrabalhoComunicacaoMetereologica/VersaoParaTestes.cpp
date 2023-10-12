@@ -90,7 +90,7 @@ bool PublicarDadosMQTT() {
       Serial.println(" mqtt broker conectado");
 
       String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
-                     "\"Estacao_ID\": \"" + estacao_ID + "\","
+                     "\"Estacao_ID\": " + estacao_ID + ","                     
                      "\"Data_Leitura\": \"" + Data_Leitura + "\","
                      "\"Hora_Leitura\": \"" + Hora_Leitura + "\","
                      "\"Chuva_hora_mm\": " + Chuvahora_mm + ","

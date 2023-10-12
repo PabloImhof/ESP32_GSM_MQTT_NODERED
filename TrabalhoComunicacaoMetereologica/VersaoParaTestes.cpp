@@ -45,7 +45,7 @@ TinyGsmClient client(modem);
 PubSubClient mqtt(client);
 
 #define uS_TO_S_FACTOR 1000000ULL
-#define TIME_TO_SLEEP 60
+#define SLEEP_TIME 2 * 60 * uS_TO_S_FACTOR  // 2 minutos em microsegundos
 #define UART_BAUD 9600
 #define PIN_DTR 25
 #define PIN_TX 27
@@ -53,6 +53,7 @@ PubSubClient mqtt(client);
 #define PWR_PIN 4
 
 // Definições das variáveis globais
+const int botaoSimuladoPin = 2;
 bool WifiConnected = false;
 bool GPRSConnected = false;
 String estacao_ID = "1";
@@ -85,8 +86,8 @@ void disableGPS() {
 bool PublicarDadosMQTT() {
   mqtt.setServer(mqtt_broker, mqtt_port);
 
-  for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {    
-      if (mqtt.connect("ESP32Client")) {
+  for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {
+    if (mqtt.connect("ESP32Client")) {
       Serial.println(" mqtt broker conectado");
 
       String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
@@ -227,6 +228,14 @@ void setup() {
   disableGPS();
   Serial.println("Iniciando Setup");
 
+  // Simula pressionar o botão após iniciar/acordar
+  pinMode(botaoSimuladoPin, OUTPUT);
+  digitalWrite(botaoSimuladoPin, LOW);
+  delay(3000);  // Mantém "pressionado" por 3s
+  // Solta o botão
+  pinMode(botaoSimuladoPin, INPUT_PULLUP);
+  delay(30000);  // Aguarda 30 segundos após a simulação do clique
+
   Serial.println("Conectando Wifi Setup");
   for (int i = 0; i < MAX_WIFI_RETRIES; i++) {
     WiFi.begin(ssid, password);
@@ -243,12 +252,12 @@ void setup() {
   // Se após todas as tentativas ainda não estiver conectado wifi, vai dormir:
   if (!WifiConnected) {
     Serial.println("Não foi possível conectar ao WiFi após todas as tentativas. Indo dormir...");
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
     esp_deep_sleep_start();
   }
   // se estiver utilizando SSL, descomentar a linha abaixo
   // client.setCertificate(root_ca);
-  
+
   Serial.println("Conectando GPRS Setup");
   for (int i = 0; i < MAX_GPRS_RETRIES; i++) {
     modem.init();
@@ -265,7 +274,7 @@ void setup() {
   // Se após todas as tentativas ainda não estiver conectado gprs, vai dormir:
   if (!GPRSConnected) {
     Serial.println("Não foi possível conectar ao GPRS após todas as tentativas. Indo dormir...");
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
     esp_deep_sleep_start();
   }
 }
@@ -285,19 +294,19 @@ void loop() {
         } else {
           Serial.println("Falha ao publicar os dados via MQTT após todas as tentativas. Indo dormir...");
         }
-        esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+        esp_sleep_enable_timer_wakeup(SLEEP_TIME);
         esp_deep_sleep_start();
       } else {
         Serial.println("Falha ao conectar via GPRS após várias tentativas.");
       }
     } else {
       Serial.println("Falha ao baixar dados. Indo dormir...");
-      esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+      esp_sleep_enable_timer_wakeup(SLEEP_TIME);
       esp_deep_sleep_start();
     }
   } else {
     Serial.println("WiFi não conectado após várias tentativas. Indo dormir...");
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
     esp_deep_sleep_start();
   }
 }

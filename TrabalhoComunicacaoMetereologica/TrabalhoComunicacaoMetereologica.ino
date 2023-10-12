@@ -10,14 +10,14 @@ const char apn[] = "zap.vivo.com.br";
 const char gprsUser[] = "vivo";
 const char gprsPass[] = "vivo";
 
-const char *mqtt_broker = "test.mosquitto.org";
-const char *topic = "my/teste/imhof";
+const char *mqtt_broker = "x";
+const char *topic = "x";
 const char *mqtt_username = "";
 const char *mqtt_password = "";
-const int mqtt_port = 1883;
+const int mqtt_port = x;
 
-const char *ssid = "Estacao_Ciclus";
-const char *password = "";
+const char *ssid = "Sua rede";
+const char *password = "Sua senha";
 
 #include <TinyGsmClient.h>
 #include <HTTPClient.h>
@@ -36,7 +36,7 @@ TinyGsmClient client(modem);
 PubSubClient mqtt(client);
 
 #define uS_TO_S_FACTOR 1000000ULL
-#define TIME_TO_SLEEP 60
+#define SLEEP_TIME 30 * 60 * uS_TO_S_FACTOR  // 30 minutos em microsegundos
 #define UART_BAUD 9600
 #define PIN_DTR 25
 #define PIN_TX 27
@@ -44,13 +44,20 @@ PubSubClient mqtt(client);
 #define PWR_PIN 4
 
 // Definições das variáveis globais
+const int botaoSimuladoPin = 2;
 bool WifiConnected = false;
 bool GPRSConnected = false;
+String estacao_ID = "1";
+String KeyValidator = "setrem";
 String Data_Leitura, Hora_Leitura, Chuvahora_mm, Chuva_dia_mm, Temperatura_C, Umidade, Pressao_Pa, T_Relva_C, Solar_W_m2, Umi_Solo, Vel_Vento_Km_H, Vel_Max_Vento_Km_h, Dir_Vento_Graus;
 
-const int MAX_WIFI_RETRIES = 3;
-const int RETRY_DELAY = 10000;  // 10 segundos
+const int MAX_WIFI_RETRIES = 3;  // Define o número máximo de tentativas de conexão WiFi
+const int MAX_GPRS_RETRIES = 3;  // Define o número máximo de tentativas de conexão GPRS
+const int MAX_MQTT_RETRIES = 3;  // Define o número máximo de tentativas de conexão MQTT
+const int RETRY_DELAY = 10000;   // 10 segundos para tentar novamente as conexões
 
+
+// define a função para ligar o modem
 void modemPowerOn() {
   pinMode(PWR_PIN, OUTPUT);
   digitalWrite(PWR_PIN, HIGH);
@@ -58,6 +65,7 @@ void modemPowerOn() {
   digitalWrite(PWR_PIN, LOW);
 }
 
+// define a função para desligar o GPS
 void disableGPS() {
   modem.sendAT("+CGPIO=0,48,1,0");
   if (modem.waitResponse(10000L) != 1) {
@@ -66,70 +74,36 @@ void disableGPS() {
   modem.disableGPS();
 }
 
-void setup() {
-  SerialMon.begin(115200);
-  modemPowerOn();
-  SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
-  disableGPS();
-  Serial.println("Iniciando Setup");
-
-  Serial.println("Conectando Wifi Setup");
-  WiFi.begin(ssid, password);
-  if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-    WifiConnected = true;
-  }
-
-  Serial.println("Conectando GPRS Setup");
-  modem.init();
-  if (modem.gprsConnect(apn, gprsUser, gprsPass)) {
-    GPRSConnected = true;
-  }
-}
-
-
 bool PublicarDadosMQTT() {
   mqtt.setServer(mqtt_broker, mqtt_port);
 
-  int maxAttempts = 3;  // Define o número máximo de tentativas
-  int attempt = 0;      // Contador de tentativas
+  for (int attempt = 0; attempt < MAX_MQTT_RETRIES; attempt++) {
+    if (mqtt.connect("ESP32Client")) {
+      Serial.println(" mqtt broker conectado");
 
-  while (attempt < maxAttempts) {
-    if (mqtt.connect("ESP32Client", mqtt_username, mqtt_password)) {
-      String dados = "{\"Estacao_ID\": \"1\","
-                     "\"Data_Leitura\": \""
-                     + Data_Leitura + "\","
-                                      "\"Hora_Leitura\": \""
-                     + Hora_Leitura + "\","
-                                      "\"Chuva_hora_mm\": "
-                     + Chuvahora_mm + ","
-                                      "\"Chuva_dia_mm\": "
-                     + Chuva_dia_mm + ","
-                                      "\"Temperatura_C\": "
-                     + Temperatura_C + ","
-                                       "\"Umidade\": "
-                     + Umidade + ","
-                                 "\"Pressao_Pa\": "
-                     + Pressao_Pa + ","
-                                    "\"T_Relva_C\": "
-                     + T_Relva_C + ","
-                                   "\"Solar_W_m2\": "
-                     + Solar_W_m2 + ","
-                                    "\"Umi_Solo\": "
-                     + Umi_Solo + ","
-                                  "\"Vel_Vento_Km_H\": "
-                     + Vel_Vento_Km_H + ","
-                                        "\"Vel_Max_Vento_Km_h\": "
-                     + Vel_Max_Vento_Km_h + ","
-                                            "\"Dir_Vento_Graus\": "
-                     + Dir_Vento_Graus + "}";
+      String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
+                     "\"Estacao_ID\": " + estacao_ID + ","                     
+                     "\"Data_Leitura\": \"" + Data_Leitura + "\","
+                     "\"Hora_Leitura\": \"" + Hora_Leitura + "\","
+                     "\"Chuva_hora_mm\": " + Chuvahora_mm + ","
+                     "\"Chuva_dia_mm\": " + Chuva_dia_mm + ","
+                     "\"Temperatura_C\": " + Temperatura_C + ","
+                     "\"Umidade\": " + Umidade + ","
+                     "\"Pressao_Pa\": " + Pressao_Pa + ","
+                     "\"T_Relva_C\": " + T_Relva_C + ","
+                     "\"Solar_W_m2\": " + Solar_W_m2 + ","
+                     "\"Umi_Solo\": " + Umi_Solo + ","
+                     "\"Vel_Vento_Km_H\": " + Vel_Vento_Km_H + ","
+                     "\"Vel_Max_Vento_Km_h\": " + Vel_Max_Vento_Km_h + ","
+                     "\"Dir_Vento_Graus\": " + Dir_Vento_Graus + "}";
 
       mqtt.publish(topic, dados.c_str());
       return true;
     }
-    SerialMon.printf("Tentativa %d falhou ao conectar ao broker %s. Motivo: %s\n", attempt + 1, mqtt_broker, mqtt.state());
-
-    delay(5000);  // Espera por 5 segundos antes de tentar novamente
     attempt++;
+    Serial.println("Tentativa falhou ao conectar ao broker MQTT. Tentando novamente...");
+
+    delay(RETRY_DELAY);  // Espera antes de tentar novamente
   }
 
   return false;
@@ -137,10 +111,12 @@ bool PublicarDadosMQTT() {
 
 bool DownloadDados() {
   HTTPClient http;
-  http.begin("http://192.168.4.1/transferir?arquivo=/data.txt");
+  http.begin("http://192.168.4.1/transferir?arquivo=/data.txt"); 
+
   int httpCode = http.GET();
 
   if (httpCode == HTTP_CODE_OK) {
+    Serial.println("Request bem sucedido");
     String payload = http.getString();
     int lastSemiColon = payload.lastIndexOf(';');
 
@@ -196,63 +172,93 @@ bool DownloadDados() {
       return true;
     }
   }
+  Serial.println("Falha ao baixar dados.");
   return false;
 }
 
+void setup() {
+  SerialMon.begin(115200);
+  modemPowerOn();
+  SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
+  disableGPS();
+  Serial.println("Iniciando Setup");
 
+  // Simula pressionar o botão após iniciar/acordar
+  pinMode(botaoSimuladoPin, OUTPUT);
+  digitalWrite(botaoSimuladoPin, LOW);
+  delay(3000);  // Mantém "pressionado" por 3s
+  // Solta o botão
+  pinMode(botaoSimuladoPin, INPUT_PULLUP);
+  delay(30000);  // Aguarda 30 segundos após a simulação do clique
+
+  Serial.println("Conectando Wifi Setup");
+  for (int i = 0; i < MAX_WIFI_RETRIES; i++) {
+    WiFi.begin(ssid, password);
+    if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+      WifiConnected = true;
+      Serial.println("Conexão WIFI bem sucedida!");
+      break;
+    } else {
+      SerialMon.printf("Tentativa %d falhou ao conectar no WiFi. Tentando novamente...\n", i + 1);
+      delay(RETRY_DELAY);  // Aguarda antes de tentar novamente
+    }
+  }
+
+  // Se após todas as tentativas ainda não estiver conectado wifi, vai dormir:
+  if (!WifiConnected) {
+    Serial.println("Não foi possível conectar ao WiFi após todas as tentativas. Indo dormir...");
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+    esp_deep_sleep_start();
+  }
+
+  Serial.println("Conectando GPRS Setup");
+  for (int i = 0; i < MAX_GPRS_RETRIES; i++) {
+    modem.init();
+    if (modem.gprsConnect(apn, gprsUser, gprsPass)) {
+      GPRSConnected = true;
+      Serial.println("Conexão GPRS bem sucedida!");
+      break;
+    } else {
+      SerialMon.printf("Tentativa %d falhou ao conectar via GPRS. Tentando novamente...\n", i + 1);
+      delay(RETRY_DELAY);  // Aguarda antes de tentar novamente
+    }
+  }
+
+  // Se após todas as tentativas ainda não estiver conectado gprs, vai dormir:
+  if (!GPRSConnected) {
+    Serial.println("Não foi possível conectar ao GPRS após todas as tentativas. Indo dormir...");
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+    esp_deep_sleep_start();
+  }
+}
 
 void loop() {
   Serial.println("Entrando no Loop");
 
-  // Tentativa de conexão WiFi
-  if (!WifiConnected) {
-    Serial.println("Conexão WIFI mal sucedida!");
-    for (int i = 0; i < MAX_WIFI_RETRIES; i++) {
-      WiFi.begin(ssid, password);
-      if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-        WifiConnected = true;
-        Serial.println("Conexão WIFI bem sucedida!");
-        break;
-      } else {
-        SerialMon.printf("Tentativa %d falhou ao conectar no WiFi. Tentando novamente...\n", i + 1);
-        delay(RETRY_DELAY);  // Aguarda antes de tentar novamente
-      }
-    }
-  }
-
   // Se a conexão WiFi foi bem-sucedida, prossegue com o download dos dados
-  if (WifiConnected) {
-    DownloadDados();
-    Serial.println("Dados obtidos com sucesso!");
-
-    // Tentativa de conexão GPRS
-    if (!GPRSConnected) {
-      for (int i = 0; i < 3; i++) {
-        if (modem.gprsConnect(apn, gprsUser, gprsPass)) {
-          GPRSConnected = true;
-          Serial.println("Conexão GPRS bem sucedida!");
-          break;
+  if (WifiConnected) {    
+    if (DownloadDados()) {
+      Serial.println("Dados obtidos com sucesso!");
+      // Se a conexão GPRS foi bem-sucedida, prossegue com a publicação de dados via MQTT
+      if (GPRSConnected) {
+        if (PublicarDadosMQTT()) {
+          Serial.println("Dados publicados com sucesso!");
         } else {
-          SerialMon.printf("Tentativa %d falhou ao conectar via GPRS. Tentando novamente...\n", i + 1);
+          Serial.println("Falha ao publicar os dados via MQTT após todas as tentativas. Indo dormir...");
         }
+        esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+        esp_deep_sleep_start();
+      } else {
+        Serial.println("Falha ao conectar via GPRS após várias tentativas.");
       }
-    }
-
-    // Se a conexão GPRS foi bem-sucedida, prossegue com a publicação de dados via MQTT
-    if (GPRSConnected) {
-      if (!PublicarDadosMQTT()) {
-        Serial.println("Primeira tentativa de publicar via MQTT falhou. Tentando novamente...");
-        PublicarDadosMQTT();  // tenta enviar novamente
-      }
-      esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-      esp_deep_sleep_start();
     } else {
-      Serial.println("Falha ao conectar via GPRS após várias tentativas.");
+      Serial.println("Falha ao baixar dados. Indo dormir...");
+      esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+      esp_deep_sleep_start();
     }
   } else {
-    if (WifiConnected) {
-      Serial.println("Falha ao baixar dados.");
-    }
-    // Note que, se o WiFi não conectar após MAX_WIFI_RETRIES tentativas, o loop() reiniciará tentando conectar novamente
+    Serial.println("WiFi não conectado após várias tentativas. Indo dormir...");
+    esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+    esp_deep_sleep_start();
   }
 }

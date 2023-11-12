@@ -90,7 +90,7 @@ bool PublicarDadosMQTT() {
     if (mqtt.connect("ESP32Client")) {
       Serial.println(" mqtt broker conectado");
 
-      String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
+       String dados = "{\"CodigoVerificador\": \"" + KeyValidator + "\","
                      "\"Estacao_ID\": " + estacao_ID + ","                     
                      "\"Data_Leitura\": \"" + Data_Leitura + "\","
                      "\"Hora_Leitura\": \"" + Hora_Leitura + "\","
@@ -106,7 +106,7 @@ bool PublicarDadosMQTT() {
                      "\"Vel_Max_Vento_Km_h\": " + Vel_Max_Vento_Km_h + ","
                      "\"Dir_Vento_Graus\": " + Dir_Vento_Graus + "}";
 
-      mqtt.publish(topic, dados.c_str());     
+      mqtt.publish(topic, dados.c_str());    
       return true;
     }
     attempt++;

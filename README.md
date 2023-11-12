@@ -53,9 +53,11 @@ Este projeto está licenciado sob a licença CC BY-NC.
 ## Créditos
 
 - [TinyGsmClient](https://github.com/vshymanskyy/TinyGSM): Uma biblioteca cliente para modems GSM.
+- [TinyGSM](https://github.com/vshymanskyy/TinyGSM)
 - [PubSubClient](https://github.com/knolleary/pubsubclient)
 - [HTTPClient](https://github.com/amcewen/HttpClient)
 - [WiFi](https://github.com/arduino-libraries/WiFi)
+- [SD](https://www.arduino.cc/reference/en/libraries/sd/)
 
 ![image](https://github.com/PabloImhof/ESP32_GSM_MQTT_NODERED/assets/89610302/81f5ec55-b0e2-4712-acf7-c57fb4037662)
 

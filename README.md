@@ -1,7 +1,6 @@
 # Estação Meteorológica com ESP32 LILYGO e SIM7000G
 
-Este repositório contém o código-fonte para uma estação meteorológica baseada em ESP32 que utiliza o módulo GSM SIM7000G para comunicação. Os dados coletados pela estação são enviados para um broker MQTT via conexão GPRS.
-Projeto e código desenvolvido para um projeto acadêmico no Curso de Engenharia de Computação.
+Este repositório contém o código-fonte para uma estação meteorológica baseada em ESP32 LILYGO que utiliza o módulo GSM SIM7000G para comunicação. Os dados coletados pela estação são enviados para um broker MQTT via conexão GPRS. O projeto e o código foram desenvolvidos para um projeto acadêmico no Curso de Engenharia de Computação.
 
 ## Características
 
@@ -10,6 +9,9 @@ Projeto e código desenvolvido para um projeto acadêmico no Curso de Engenharia
 - Publica os dados coletados para um broker MQTT.
 - Pode ser configurado para trabalhar com SSL.
 - O ESP32 é configurado para entrar em modo de economia de energia (deep sleep) entre as leituras.
+- Incorpora um servidor broker Mosquitto MQTT e um servidor Node-RED.
+- Integração com PostgreSQL para armazenamento de dados.
+- Dashboard Node-RED para visualização e análise dos dados coletados.
 
 ## Configuração
 
@@ -46,15 +48,14 @@ Sinta-se à vontade para criar issues ou pull requests para melhorar este projet
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT.
+Este projeto está licenciado sob a licença CC BY-NC.
 
 ## Créditos
 
 - [TinyGsmClient](https://github.com/vshymanskyy/TinyGSM): Uma biblioteca cliente para modems GSM.
-- PubSubClient
-- HTTPClient
-- WiFi
+- [PubSubClient](https://github.com/knolleary/pubsubclient)
+- [HTTPClient](https://github.com/amcewen/HttpClient)
+- [WiFi](https://github.com/arduino-libraries/WiFi)
 
----
+![image](https://github.com/PabloImhof/ESP32_GSM_MQTT_NODERED/assets/89610302/81f5ec55-b0e2-4712-acf7-c57fb4037662)
 
-**Nota**: Este é um documento básico README para o projeto baseado no código fornecido. Você pode adicionar mais detalhes, como imagens, diagramas, instruções de instalação detalhadas, etc., conforme necessário para o seu projeto.

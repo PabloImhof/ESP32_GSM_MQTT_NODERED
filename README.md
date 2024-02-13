@@ -58,6 +58,8 @@ Este projeto está licenciado sob a licença CC BY-NC.
 - [HTTPClient](https://github.com/amcewen/HttpClient)
 - [WiFi](https://github.com/arduino-libraries/WiFi)
 - [SD](https://www.arduino.cc/reference/en/libraries/sd/)
+- Driver ESP32 Win11 [CP210x_Windows_Drivers.zip](https://github.com/PabloImhof/ESP32_GSM_MQTT_NODERED/files/14270645/CP210x_Windows_Drivers.zip)
+
 
 ![image](https://github.com/PabloImhof/ESP32_GSM_MQTT_NODERED/assets/89610302/81f5ec55-b0e2-4712-acf7-c57fb4037662)
 
